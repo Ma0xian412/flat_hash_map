@@ -27,6 +27,38 @@ struct fibonacci_hash_policy;
 
 namespace detailv3
 {
+template<typename T, bool IsFloating = std::is_floating_point<T>::value>
+struct sherwood_default_hash : std::hash<T>
+{
+};
+
+template<typename T>
+struct sherwood_default_hash<T, true>
+{
+    size_t operator()(T value) const
+    {
+        if (std::isnan(value))
+            return 0;
+        if (value == T(0))
+            value = T(0);
+        return std::hash<T>()(value);
+    }
+};
+
+template<typename T, bool IsFloating = std::is_floating_point<T>::value>
+struct sherwood_default_equal : std::equal_to<T>
+{
+};
+
+template<typename T>
+struct sherwood_default_equal<T, true>
+{
+    bool operator()(T lhs, T rhs) const
+    {
+        return lhs == rhs || (std::isnan(lhs) && std::isnan(rhs));
+    }
+};
+
 template<typename Result, typename Functor>
 struct functor_storage : Functor
 {
@@ -1294,7 +1326,7 @@ private:
     int8_t shift = 63;
 };
 
-template<typename K, typename V, typename H = std::hash<K>, typename E = std::equal_to<K>, typename A = std::allocator<std::pair<K, V> > >
+template<typename K, typename V, typename H = detailv3::sherwood_default_hash<K>, typename E = detailv3::sherwood_default_equal<K>, typename A = std::allocator<std::pair<K, V> > >
 class flat_hash_map
         : public detailv3::sherwood_v3_table
         <
@@ -1413,7 +1445,7 @@ private:
     };
 };
 
-template<typename T, typename H = std::hash<T>, typename E = std::equal_to<T>, typename A = std::allocator<T> >
+template<typename T, typename H = detailv3::sherwood_default_hash<T>, typename E = detailv3::sherwood_default_equal<T>, typename A = std::allocator<T> >
 class flat_hash_set
         : public detailv3::sherwood_v3_table
         <
