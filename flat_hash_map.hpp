@@ -28,6 +28,36 @@ struct fibonacci_hash_policy;
 
 namespace detailv3
 {
+static constexpr long double sherwood_default_price_scale = 100000000.0L;
+
+template<typename T>
+inline int64_t sherwood_normalized_floating_key(T value)
+{
+    static constexpr int64_t nan_sentinel = std::numeric_limits<int64_t>::min();
+    static constexpr int64_t neg_inf_sentinel = std::numeric_limits<int64_t>::min() + 1;
+    static constexpr int64_t scaled_min_value = std::numeric_limits<int64_t>::min() + 2;
+    static constexpr int64_t pos_inf_sentinel = std::numeric_limits<int64_t>::max();
+    static constexpr int64_t scaled_max_value = std::numeric_limits<int64_t>::max() - 1;
+    static constexpr long double scaled_min_bound = static_cast<long double>(scaled_min_value);
+    static constexpr long double scaled_max_bound = static_cast<long double>(scaled_max_value);
+    if (std::isnan(value))
+        return nan_sentinel;
+    if (std::isinf(value))
+        return value > 0 ? pos_inf_sentinel : neg_inf_sentinel;
+    // sherwood_default_price_scale keeps 8 decimal digits for price-like values.
+    long double scaled = static_cast<long double>(value) * sherwood_default_price_scale;
+    if (scaled > scaled_max_bound)
+        return scaled_max_value;
+    if (scaled < scaled_min_bound)
+        return scaled_min_value;
+    long double rounded = std::round(scaled);
+    if (rounded > scaled_max_bound)
+        return scaled_max_value;
+    if (rounded < scaled_min_bound)
+        return scaled_min_value;
+    return static_cast<int64_t>(rounded);
+}
+
 template<typename T, bool IsFloating = std::is_floating_point<T>::value>
 struct sherwood_default_hash : std::hash<T>
 {
@@ -38,22 +68,7 @@ struct sherwood_default_hash<T, true>
 {
     size_t operator()(T value) const
     {
-        return std::hash<int64_t>()(normalized(value));
-    }
-private:
-    static int64_t normalized(T value)
-    {
-        if (std::isnan(value))
-            return std::numeric_limits<int64_t>::min();
-        if (std::isinf(value))
-            return value > 0 ? std::numeric_limits<int64_t>::max() : std::numeric_limits<int64_t>::min() + 1;
-        static constexpr long double scale = 100000000.0L;
-        long double scaled = static_cast<long double>(value) * scale;
-        if (scaled >= static_cast<long double>(std::numeric_limits<int64_t>::max()))
-            return std::numeric_limits<int64_t>::max();
-        if (scaled <= static_cast<long double>(std::numeric_limits<int64_t>::min() + 1))
-            return std::numeric_limits<int64_t>::min() + 1;
-        return static_cast<int64_t>(std::llround(scaled));
+        return std::hash<int64_t>()(sherwood_normalized_floating_key(value));
     }
 };
 
@@ -67,22 +82,7 @@ struct sherwood_default_equal<T, true>
 {
     bool operator()(T lhs, T rhs) const
     {
-        return normalized(lhs) == normalized(rhs);
-    }
-private:
-    static int64_t normalized(T value)
-    {
-        if (std::isnan(value))
-            return std::numeric_limits<int64_t>::min();
-        if (std::isinf(value))
-            return value > 0 ? std::numeric_limits<int64_t>::max() : std::numeric_limits<int64_t>::min() + 1;
-        static constexpr long double scale = 100000000.0L;
-        long double scaled = static_cast<long double>(value) * scale;
-        if (scaled >= static_cast<long double>(std::numeric_limits<int64_t>::max()))
-            return std::numeric_limits<int64_t>::max();
-        if (scaled <= static_cast<long double>(std::numeric_limits<int64_t>::min() + 1))
-            return std::numeric_limits<int64_t>::min() + 1;
-        return static_cast<int64_t>(std::llround(scaled));
+        return sherwood_normalized_floating_key(lhs) == sherwood_normalized_floating_key(rhs);
     }
 };
 
