@@ -115,7 +115,7 @@ void test_multiple_arithmetic_combinations()
     std::cout << "[test_multiple_arithmetic_combinations]" << std::endl;
     ska::flat_hash_map<double, int> map;
 
-    // All of these should map to the key for 0.3 (3e7 after scaling).
+    // All of these should map to the key for 0.3 (30000000 after scaling by 1e8).
     double keys[] = {0.3, 0.1 + 0.2, 1.0 - 0.7, 0.1 * 3, 0.6 / 2.0};
 
     map[0.3] = 42;
