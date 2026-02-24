@@ -12,6 +12,7 @@
 #include <iterator>
 #include <utility>
 #include <type_traits>
+#include <limits>
 
 #ifdef _MSC_VER
 #define SKA_NOINLINE(...) __declspec(noinline) __VA_ARGS__
@@ -37,11 +38,22 @@ struct sherwood_default_hash<T, true>
 {
     size_t operator()(T value) const
     {
+        return std::hash<int64_t>()(normalized(value));
+    }
+private:
+    static int64_t normalized(T value)
+    {
         if (std::isnan(value))
-            return 0;
-        if (value == T(0))
-            value = T(0);
-        return std::hash<T>()(value);
+            return std::numeric_limits<int64_t>::min();
+        if (std::isinf(value))
+            return value > 0 ? std::numeric_limits<int64_t>::max() : std::numeric_limits<int64_t>::min() + 1;
+        static constexpr long double scale = 100000000.0L;
+        long double scaled = static_cast<long double>(value) * scale;
+        if (scaled >= static_cast<long double>(std::numeric_limits<int64_t>::max()))
+            return std::numeric_limits<int64_t>::max();
+        if (scaled <= static_cast<long double>(std::numeric_limits<int64_t>::min() + 1))
+            return std::numeric_limits<int64_t>::min() + 1;
+        return static_cast<int64_t>(std::llround(scaled));
     }
 };
 
@@ -55,7 +67,22 @@ struct sherwood_default_equal<T, true>
 {
     bool operator()(T lhs, T rhs) const
     {
-        return lhs == rhs || (std::isnan(lhs) && std::isnan(rhs));
+        return normalized(lhs) == normalized(rhs);
+    }
+private:
+    static int64_t normalized(T value)
+    {
+        if (std::isnan(value))
+            return std::numeric_limits<int64_t>::min();
+        if (std::isinf(value))
+            return value > 0 ? std::numeric_limits<int64_t>::max() : std::numeric_limits<int64_t>::min() + 1;
+        static constexpr long double scale = 100000000.0L;
+        long double scaled = static_cast<long double>(value) * scale;
+        if (scaled >= static_cast<long double>(std::numeric_limits<int64_t>::max()))
+            return std::numeric_limits<int64_t>::max();
+        if (scaled <= static_cast<long double>(std::numeric_limits<int64_t>::min() + 1))
+            return std::numeric_limits<int64_t>::min() + 1;
+        return static_cast<int64_t>(std::llround(scaled));
     }
 };
 
