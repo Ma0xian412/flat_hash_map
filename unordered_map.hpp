@@ -712,7 +712,7 @@ private:
 }
 
 
-template<typename K, typename V, typename H = std::hash<K>, typename E = std::equal_to<K>, typename A = std::allocator<std::pair<K, V> > >
+template<typename K, typename V, typename H = detailv3::sherwood_default_hash<K>, typename E = detailv3::sherwood_default_equal<K>, typename A = std::allocator<std::pair<K, V> > >
 class unordered_map
         : public detailv10::sherwood_v10_table
         <
@@ -807,7 +807,7 @@ private:
     };
 };
 
-template<typename T, typename H = std::hash<T>, typename E = std::equal_to<T>, typename A = std::allocator<T> >
+template<typename T, typename H = detailv3::sherwood_default_hash<T>, typename E = detailv3::sherwood_default_equal<T>, typename A = std::allocator<T> >
 class unordered_set
         : public detailv10::sherwood_v10_table
         <
