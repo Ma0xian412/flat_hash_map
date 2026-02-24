@@ -1,8 +1,8 @@
 #include <cassert>
 #include <limits>
-#include "flat_hash_map.hpp"
-#include "bytell_hash_map.hpp"
-#include "unordered_map.hpp"
+#include "../flat_hash_map.hpp"
+#include "../bytell_hash_map.hpp"
+#include "../unordered_map.hpp"
 
 template<typename Map>
 void test_normalized_floating_point_keys()
